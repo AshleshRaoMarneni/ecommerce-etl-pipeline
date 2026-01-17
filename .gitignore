@@ -1,0 +1,26 @@
+# Virtual environments
+airflow_env/
+venv/
+
+# Airflow generated files
+airflow.db
+airflow.cfg
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Environment variables
+.env
+
+
+# Data folders
+data/raw/
+data/processed/
+data/curated/
+
+

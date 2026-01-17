@@ -1,18 +1,20 @@
 
-
-import pandas as pd
 from sqlalchemy import create_engine
+import pandas as pd
 
-# Read your transformed CSV
-df = pd.read_csv("data/processed/extracted_sales.csv")
+# Example Postgres connection
+user = "your_user"
+password = "your_password"
+host = "localhost"
+port = "5432"
+database = "your_db"
 
-# Connect to PostgreSQL
-engine = create_engine(
-    "postgresql+psycopg2://ecommerce_user:12345@localhost:5432/ecommerce_db"
-)
+engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}")
 
-# Load the data into a table called fact_sales
-df.to_sql("fact_sales", engine, if_exists="replace", index=False)
+# Load CSV
+curated_dir = "data/curated/"
+fact_sales = pd.read_csv(curated_dir + "fact_sales.csv", low_memory=False)
 
-print("Data loaded successfully!")
+# Write to Postgres
+fact_sales.to_sql('fact_sales', engine, if_exists='replace', index=False)
 

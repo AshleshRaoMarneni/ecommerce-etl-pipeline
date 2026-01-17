@@ -1,27 +1,44 @@
-
+# transform/transform_data.py
 import pandas as pd
+import os
 
-def transform_sales(df):
-    # Remove cancelled invoices
-    df = df[~df["InvoiceNo"].astype(str).str.startswith("C")]
+processed_file = "data/processed/extracted_sales.csv"
+curated_dir = "data/curated/"
+os.makedirs(curated_dir, exist_ok=True)
 
-    # Remove negative quantities
-    df = df[df["Quantity"] > 0]
+# Load processed CSV
+df = pd.read_csv(processed_file)
 
-    # Handle missing CustomerID
-    df = df.dropna(subset=["CustomerID"])
+# Basic cleaning
+df = df.dropna(subset=['invoiceno', 'stockcode'])  # remove rows missing invoice or product
+df = df[df['quantity'] > 0]                        # remove zero or negative quantity
+df = df.drop_duplicates(subset=['invoiceno', 'stockcode'])
 
-    # Convert date
-    df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
+# Add revenue column
+df['revenue'] = df['quantity'] * df['unitprice']
 
-    # Calculate revenue
-    df["Revenue"] = df["Quantity"] * df["UnitPrice"]
+# Fact Table
+fact_sales = df[['invoiceno','invoicedate','stockcode','quantity','revenue']]
+fact_sales.to_csv(os.path.join(curated_dir,"fact_sales.csv"), index=False)
+print("Fact table created")
 
-    return df
+# Product Dimension
+dim_product = df[['stockcode','description','unitprice']].drop_duplicates()
+dim_product.to_csv(os.path.join(curated_dir,"dim_product.csv"), index=False)
+print("Product dimension table created")
 
-if __name__ == "__main__":
+# Date Dimension
+df['invoicedate'] = pd.to_datetime(df['invoicedate'], errors='coerce')
+dim_date = pd.DataFrame({
+    'date': df['invoicedate'].dt.date,
+    'day': df['invoicedate'].dt.day,
+    'month': df['invoicedate'].dt.month,
+    'year': df['invoicedate'].dt.year
+}).drop_duplicates()
+dim_date.to_csv(os.path.join(curated_dir,"dim_date.csv"), index=False)
+print("Date dimension table created")
 
-    raw_df = pd.read_csv("data/processed/extracted_sales.csv", encoding="latin1")
-    clean_df = transform_sales(raw_df)
-    clean_df.to_csv("data/processed/extracted_sales.csv", index=False)
+print("\nCurated Layer Completed Successfully!")
+
+
 
